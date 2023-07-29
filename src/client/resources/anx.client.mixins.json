@@ -1,0 +1,12 @@
+{
+  "required": true,
+  "package": "com.mod.mixin.client",
+  "compatibilityLevel": "JAVA_17",
+  "client": [
+    "BoatEntityRendererMixin",
+    "EntityModelLayersMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+	}
+}

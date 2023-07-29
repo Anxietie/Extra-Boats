@@ -1,4 +1,4 @@
-package com.example;
+package com.mod;
 
 import net.fabricmc.api.ClientModInitializer;
 

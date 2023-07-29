@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "minecraft:misc",
+  "group": "chest_boat",
+  "ingredients": [
+    {
+      "item": "minecraft:chest"
+    },
+    {
+      "item": "anx:warped_boat"
+    }
+  ],
+  "result": {
+    "item": "anx:warped_chest_boat"
+  }
+}

@@ -1,31 +1,31 @@
 {
 	"schemaVersion": 1,
-	"id": "modid",
-	"version": "${version}",
-	"name": "Example mod",
-	"description": "This is an example description! Tell everyone what your mod is about!",
+	"id": "anx",
+	"version": "${1.0}",
+	"name": "Extra Boats",
+	"description": "This mod adds warped and crimson boat types to the game as completely new and separate boats.",
 	"authors": [
-		"Me!"
+		"Anxietie"
 	],
 	"contact": {
 		"homepage": "https://fabricmc.net/",
 		"sources": "https://github.com/FabricMC/fabric-example-mod"
 	},
 	"license": "CC0-1.0",
-	"icon": "assets/modid/icon.png",
+	"icon": "assets/anx/icon.png",
 	"environment": "*",
 	"entrypoints": {
 		"main": [
-			"com.example.ExampleMod"
+			"com.mod.ExampleMod"
 		],
 		"client": [
-			"com.example.ExampleModClient"
+			"com.mod.ExampleModClient"
 		]
 	},
 	"mixins": [
-		"modid.mixins.json",
+		"anx.mixins.json",
 		{
-			"config": "modid.client.mixins.json",
+			"config": "anx.client.mixins.json",
 			"environment": "client"
 		}
 	],
