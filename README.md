@@ -1,9 +1,12 @@
-# Fabric Example Mod
+# Extra Boats
 
-## Setup
+1.20.1 mod that adds crimson and warped boat variants to the game.
 
-For setup instructions please see the [fabric wiki page](https://fabricmc.net/wiki/tutorial:setup) that relates to the IDE that you are using.
+## Dependencies
+- Fabric API
 
-## License
+## Compatibility
+This mod SHOULD be compatible with just about everything. However, I've done no testing.
 
-This template is available under the CC0 license. Feel free to learn from it and incorporate it in your own projects.
+## Goal
+To put it simply: the goal of this mod is to add crimson and warped boats to the game (which has already been done), AND to make them rideable on lava. The current method used to add the boats to the game will probably be completely changed since making the boats rideable on lava requires much deeper adjustments of the source code.
