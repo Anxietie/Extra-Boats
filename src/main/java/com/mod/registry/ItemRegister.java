@@ -10,7 +10,7 @@ import net.minecraft.util.Identifier;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import static com.mod.ExampleMod.MODID;
+import static com.mod.ExtraBoats.MODID;
 
 public class ItemRegister {
     private static final Collection<ItemStack> ITEMS = new ArrayList<>();
