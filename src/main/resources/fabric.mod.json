@@ -15,10 +15,10 @@
 	"environment": "*",
 	"entrypoints": {
 		"main": [
-			"com.mod.ExampleMod"
+			"com.mod.ExtraBoats"
 		],
 		"client": [
-			"com.mod.ExampleModClient"
+			"com.mod.ExtraBoatsClient"
 		]
 	},
 	"mixins": [
