@@ -3,9 +3,13 @@
   "package": "com.mod.mixin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
-    "BoatEntityMixin",
     "BoatEntityTypeMixin",
-    "ChestBoatEntityMixin"
+    "BoatItemMixin",
+    "DispenserBehaviorMixin",
+    "EntityMixin",
+    "ItemGroupsMixin",
+    "PlayerEntityMixin",
+    "TypeSpecificPredicateDeserializersMixin"
   ],
   "injectors": {
     "defaultRequire": 1

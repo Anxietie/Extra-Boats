@@ -1,5 +1,6 @@
 package com.mod;
 
+import com.mod.registry.EntityRegister;
 import com.mod.registry.ItemRegister;
 import net.fabricmc.api.ModInitializer;
 
@@ -19,10 +20,13 @@ public class ExtraBoats implements ModInitializer {
 		// However, some things (like resources) may still be uninitialized.
 		// Proceed with mild caution.
 
-		LOGGER.info("More Boats initializing");
+		LOGGER.info("Extra Boats initializing");
 
 		ItemRegister.registerItems();
 		ItemRegister.registerItemGroups();
-		LOGGER.info("More Boats items registered");
+		LOGGER.info("Extra Boats items registered");
+
+		EntityRegister.registerEntities();
+		LOGGER.info("Extra Boats entities registered");
 	}
 }

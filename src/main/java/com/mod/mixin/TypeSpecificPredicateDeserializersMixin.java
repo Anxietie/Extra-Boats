@@ -1,5 +1,6 @@
 package com.mod.mixin;
 
+import com.mod.entity.ExtraBoatEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.predicate.entity.TypeSpecificPredicate;
 import org.spongepowered.asm.mixin.Mixin;
@@ -13,6 +14,10 @@ import java.util.Optional;
 public abstract class TypeSpecificPredicateDeserializersMixin {
     @Inject(method = "method_47838", at = @At("HEAD"), cancellable = true)
     private static void method_47838(Entity entity, CallbackInfoReturnable<Optional> cir) {
-
+        Optional<Object> optional;
+        if (entity instanceof ExtraBoatEntity boatEntity) {
+            optional = Optional.of(boatEntity.getVariant());
+            cir.setReturnValue(optional);
+        }
     }
 }

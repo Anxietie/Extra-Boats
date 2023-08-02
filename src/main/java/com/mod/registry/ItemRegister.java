@@ -44,7 +44,7 @@ public class ItemRegister {
 
     public static void registerItemGroups() {
         // registerItemGroup("item_group", ITEM_GROUP);
-        ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(content -> content.addAll(ITEMS));
+        ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(content -> content.addAfter(Items.BAMBOO_CHEST_RAFT, ITEMS)); // cringe experimental way
     }
 
     private static void registerItemGroup(String id, ItemGroup group) {

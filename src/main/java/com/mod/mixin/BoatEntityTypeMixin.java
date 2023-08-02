@@ -31,17 +31,17 @@ public abstract class BoatEntityTypeMixin {
 	private static final List<BoatEntity.Type> $TYPES = new ArrayList<>();
 
 	@Invoker("<init>")
-	private static BoatEntity.Type example$newType(String internalName, int internalId, Block baseBlock, String name) {
+	private static BoatEntity.Type Type(String internalName, int internalId, Block baseBlock, String name) {
 		throw new AssertionError();
 	}
 
 	@Inject(method = "<clinit>", at = @At("TAIL"))
-	private static void example$addType(CallbackInfo ci) {
+	private static void addType(CallbackInfo ci) {
 		List<BoatEntity.Type> types = new ArrayList<>(Arrays.asList(field_7724));
 		int ordinal = types.get(types.size() - 1).ordinal();
 
-		ExtendedBoatEntityType.CRIMSON = example$initType("CRIMSON", ++ordinal, Blocks.CRIMSON_PLANKS, "crimson");
-		ExtendedBoatEntityType.WARPED = example$initType("WARPED", ++ordinal, Blocks.WARPED_PLANKS, "warped");
+		ExtendedBoatEntityType.CRIMSON = initType("CRIMSON", ++ordinal, Blocks.CRIMSON_PLANKS, "crimson");
+		ExtendedBoatEntityType.WARPED = initType("WARPED", ++ordinal, Blocks.WARPED_PLANKS, "warped");
 
 		types.addAll($TYPES);
 		field_7724 = types.toArray(new BoatEntity.Type[0]);
@@ -49,8 +49,8 @@ public abstract class BoatEntityTypeMixin {
 	}
 
 	@Unique
-	private static BoatEntity.Type example$initType(String internalName, int internalId, Block baseBlock, String name) {
-		$TYPES.add(example$newType(internalName, internalId, baseBlock, name));
+	private static BoatEntity.Type initType(String internalName, int internalId, Block baseBlock, String name) {
+		$TYPES.add(Type(internalName, internalId, baseBlock, name));
 		return $TYPES.get($TYPES.size() - 1);
 	}
 
