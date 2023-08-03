@@ -28,7 +28,7 @@ public abstract class EntityModelLayersMixin {
         }
     }
 
-    @Inject(method = "createBoat", at = @At("TAIL"), cancellable = true)
+    @Inject(method = "createChestBoat", at = @At("TAIL"), cancellable = true)
     private static void createChestBoat(BoatEntity.Type type, CallbackInfoReturnable<EntityModelLayer> cir) {
         if (type == CRIMSON || type == WARPED) {
             cir.setReturnValue(create("chest_boat/" + type.getName(), "main"));

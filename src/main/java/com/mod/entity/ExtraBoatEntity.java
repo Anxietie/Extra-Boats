@@ -10,6 +10,8 @@ import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
+import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.mob.WaterCreatureEntity;
 import net.minecraft.entity.passive.AnimalEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -51,18 +53,13 @@ public class ExtraBoatEntity extends Entity implements VariantHolder<BoatEntity.
     private static final TrackedData<Boolean> LEFT_PADDLE_MOVING = DataTracker.registerData(ExtraBoatEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
     private static final TrackedData<Boolean> RIGHT_PADDLE_MOVING = DataTracker.registerData(ExtraBoatEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
     private static final TrackedData<Integer> BUBBLE_WOBBLE_TICKS = DataTracker.registerData(ExtraBoatEntity.class, TrackedDataHandlerRegistry.INTEGER);
-    public static final int field_30697 = 0;
-    public static final int field_30698 = 1;
-    private static final int field_30695 = 60;
     private static final float NEXT_PADDLE_PHASE = 0.3926991f;
     /**
      * A boat will emit a sound event every time a paddle is near this rotation.
      */
     public static final double EMIT_SOUND_EVENT_PADDLE_ROTATION = 0.7853981852531433;
-    public static final int field_30700 = 60;
     private final float[] paddlePhases = new float[2];
-    private float velocityDecay;
-    private float ticksUnderwater;
+    private float ticksUnderlava;
     private float yawVelocity;
     private int field_7708;
     private double x;
@@ -74,7 +71,7 @@ public class ExtraBoatEntity extends Entity implements VariantHolder<BoatEntity.
     private boolean pressingRight;
     private boolean pressingForward;
     private boolean pressingBack;
-    private double waterLevel;
+    private double lavaLevel;
     private float nearbySlipperiness;
     private Location location;
     private Location lastLocation;
@@ -234,15 +231,32 @@ public class ExtraBoatEntity extends Entity implements VariantHolder<BoatEntity.
     public void tick() {
         this.lastLocation = this.location;
         this.location = this.checkLocation();
-        this.ticksUnderwater = this.location == Location.UNDER_WATER || this.location == Location.UNDER_FLOWING_WATER ? this.ticksUnderwater + 1.0f : 0.0f;
-        if (!isClient() && this.ticksUnderwater >= 60.0f)
+        this.ticksUnderlava = this.location == Location.UNDER_LAVA || this.location == Location.UNDER_FLOWING_LAVA ? this.ticksUnderlava + 1.0f : 0.0f;
+        if (!isClient() && this.ticksUnderlava >= 60.0f) {
+            List<Entity> passengers = this.getPassengerList();
+            for (Entity e : passengers) {
+                if (e instanceof LivingEntity) {
+                    if (((LivingEntity)e).hasStatusEffect(StatusEffects.FIRE_RESISTANCE) && ((LivingEntity)e).getStatusEffect(StatusEffects.FIRE_RESISTANCE).isDurationBelow(4))
+                        ((LivingEntity)e).removeStatusEffect(StatusEffects.FIRE_RESISTANCE);
+                    e.extinguish();
+                }
+            }
             this.removeAllPassengers();
+        }
         if (this.getDamageWobbleTicks() > 0)
             this.setDamageWobbleTicks(this.getDamageWobbleTicks() - 1);
         if (this.getDamageWobbleStrength() > 0.0f)
             this.setDamageWobbleStrength(this.getDamageWobbleStrength() - 1.0f);
         super.tick();
         this.updatePositionAndRotation();
+        if (this.hasPassengers() && (this.location == Location.IN_LAVA || this.location == Location.UNDER_LAVA || this.location == Location.UNDER_FLOWING_LAVA)) {
+            List<Entity> passengers = this.getPassengerList();
+            StatusEffectInstance fireResistance = new StatusEffectInstance(StatusEffects.FIRE_RESISTANCE, 3, 1, false, false, false);
+            for (Entity e : passengers) {
+                if (e instanceof LivingEntity)
+                    ((LivingEntity)e).addStatusEffect(fireResistance);
+            }
+        }
         if (this.isLogicalSideForUpdatingMovement()) {
             if (!(this.getFirstPassenger() instanceof PlayerEntity))
                 this.setPaddleMovings(false, false);
@@ -252,9 +266,9 @@ public class ExtraBoatEntity extends Entity implements VariantHolder<BoatEntity.
                 this.getWorld().sendPacket(new BoatPaddleStateC2SPacket(this.isPaddleMoving(0), this.isPaddleMoving(1)));
             }
             this.move(MovementType.SELF, this.getVelocity());
-        } else {
-            this.setVelocity(Vec3d.ZERO);
         }
+        else
+            this.setVelocity(Vec3d.ZERO);
         this.handleBubbleColumn();
         for (int i = 0; i <= 1; ++i) {
             if (this.isPaddleMoving(i)) {
@@ -296,7 +310,8 @@ public class ExtraBoatEntity extends Entity implements VariantHolder<BoatEntity.
             this.bubbleWobbleStrength = MathHelper.clamp(this.bubbleWobbleStrength, 0.0f, 1.0f);
             this.lastBubbleWobble = this.bubbleWobble;
             this.bubbleWobble = 10.0f * (float)Math.sin(0.5f * (float)this.getWorld().getTime()) * this.bubbleWobbleStrength;
-        } else {
+        }
+        else {
             int i;
             if (!this.onBubbleColumnSurface)
                 this.setBubbleWobbleTicks(0);
@@ -321,7 +336,7 @@ public class ExtraBoatEntity extends Entity implements VariantHolder<BoatEntity.
     @Nullable
     protected SoundEvent getPaddleSoundEvent() {
         switch (this.checkLocation()) {
-            case IN_WATER, UNDER_WATER, UNDER_FLOWING_WATER -> {
+            case IN_LAVA, UNDER_LAVA, UNDER_FLOWING_LAVA -> {
                 return SoundEvents.ENTITY_BOAT_PADDLE_WATER;
             }
             case ON_LAND -> {
@@ -362,13 +377,13 @@ public class ExtraBoatEntity extends Entity implements VariantHolder<BoatEntity.
     }
 
     private Location checkLocation() {
-        Location location = this.getUnderWaterLocation();
+        Location location = this.getUnderLavaLocation();
         if (location != null) {
-            this.waterLevel = this.getBoundingBox().maxY;
+            this.lavaLevel = this.getBoundingBox().maxY;
             return location;
         }
-        if (this.checkBoatInWater()) {
-            return Location.IN_WATER;
+        if (this.checkBoatInLava()) {
+            return Location.IN_LAVA;
         }
         float f = this.getNearbySlipperiness();
         if (f > 0.0f) {
@@ -378,7 +393,7 @@ public class ExtraBoatEntity extends Entity implements VariantHolder<BoatEntity.
         return Location.IN_AIR;
     }
 
-    public float getWaterHeightBelow() {
+    public float getLavaHeightBelow() {
         Box box = this.getBoundingBox();
         int i = MathHelper.floor(box.minX);
         int j = MathHelper.ceil(box.maxX);
@@ -393,7 +408,7 @@ public class ExtraBoatEntity extends Entity implements VariantHolder<BoatEntity.
                 for (int q = m; q < n; ++q) {
                     mutable.set(p, o, q);
                     FluidState fluidState = this.getWorld().getFluidState(mutable);
-                    if (fluidState.isIn(FluidTags.WATER)) {
+                    if (fluidState.isIn(FluidTags.LAVA)) {
                         f = Math.max(f, fluidState.getHeight(this.getWorld(), mutable));
                     }
                     if (f >= 1.0f) continue block0;
@@ -435,7 +450,7 @@ public class ExtraBoatEntity extends Entity implements VariantHolder<BoatEntity.
         return f / (float)o;
     }
 
-    private boolean checkBoatInWater() {
+    private boolean checkBoatInLava() {
         Box box = this.getBoundingBox();
         int i = MathHelper.floor(box.minX);
         int j = MathHelper.ceil(box.maxX);
@@ -443,26 +458,26 @@ public class ExtraBoatEntity extends Entity implements VariantHolder<BoatEntity.
         int l = MathHelper.ceil(box.minY + 0.001);
         int m = MathHelper.floor(box.minZ);
         int n = MathHelper.ceil(box.maxZ);
-        boolean inWater = false;
-        this.waterLevel = -1.7976931348623157E308;
+        boolean inLava = false;
+        this.lavaLevel = -1.7976931348623157E308;
         BlockPos.Mutable mutable = new BlockPos.Mutable();
         for (int o = i; o < j; ++o) {
             for (int p = k; p < l; ++p) {
                 for (int q = m; q < n; ++q) {
                     mutable.set(o, p, q);
                     FluidState fluidState = this.getWorld().getFluidState(mutable);
-                    if (!fluidState.isIn(FluidTags.WATER)) continue;
+                    if (!fluidState.isIn(FluidTags.LAVA)) continue;
                     float f = (float)p + fluidState.getHeight(this.getWorld(), mutable);
-                    this.waterLevel = Math.max((double)f, this.waterLevel);
-                    inWater |= box.minY < (double)f;
+                    this.lavaLevel = Math.max(f, this.lavaLevel);
+                    inLava |= box.minY < (double)f;
                 }
             }
         }
-        return inWater;
+        return inLava;
     }
 
     @Nullable
-    private Location getUnderWaterLocation() {
+    private Location getUnderLavaLocation() {
         Box box = this.getBoundingBox();
         double d = box.maxY + 0.001;
         int i = MathHelper.floor(box.minX);
@@ -471,56 +486,56 @@ public class ExtraBoatEntity extends Entity implements VariantHolder<BoatEntity.
         int l = MathHelper.ceil(d);
         int m = MathHelper.floor(box.minZ);
         int n = MathHelper.ceil(box.maxZ);
-        boolean bl = false;
+        boolean stillFluid = false;
         BlockPos.Mutable mutable = new BlockPos.Mutable();
         for (int o = i; o < j; ++o) {
             for (int p = k; p < l; ++p) {
                 for (int q = m; q < n; ++q) {
                     mutable.set(o, p, q);
                     FluidState fluidState = this.getWorld().getFluidState(mutable);
-                    if (!fluidState.isIn(FluidTags.WATER) || !(d < (double)((float)mutable.getY() + fluidState.getHeight(this.getWorld(), mutable)))) continue;
+                    if (!fluidState.isIn(FluidTags.LAVA) || !(d < (double)((float)mutable.getY() + fluidState.getHeight(this.getWorld(), mutable)))) continue;
                     if (fluidState.isStill()) {
-                        bl = true;
+                        stillFluid = true;
                         continue;
                     }
-                    return Location.UNDER_FLOWING_WATER;
+                    return Location.UNDER_FLOWING_LAVA;
                 }
             }
         }
-        return bl ? Location.UNDER_WATER : null;
+        return stillFluid ? Location.UNDER_LAVA : null;
     }
 
     private void updateVelocity() {
         double e = this.hasNoGravity() ? 0.0 : (double)-0.04f;
         double f = 0.0;
-        this.velocityDecay = 0.05f;
+        float velocityDecay = 0.05f;
         if (this.lastLocation == Location.IN_AIR && this.location != Location.IN_AIR && this.location != Location.ON_LAND) {
-            this.waterLevel = this.getBodyY(1.0);
-            this.setPosition(this.getX(), (double)(this.getWaterHeightBelow() - this.getHeight()) + 0.101, this.getZ());
+            this.lavaLevel = this.getBodyY(1.0);
+            this.setPosition(this.getX(), (double)(this.getLavaHeightBelow() - this.getHeight()) + 0.101, this.getZ());
             this.setVelocity(this.getVelocity().multiply(1.0, 0.0, 1.0));
             this.fallVelocity = 0.0;
-            this.location = Location.IN_WATER;
+            this.location = Location.IN_LAVA;
         } else {
-            if (this.location == Location.IN_WATER) {
-                f = (this.waterLevel - this.getY()) / (double)this.getHeight();
-                this.velocityDecay = 0.9f;
-            } else if (this.location == Location.UNDER_FLOWING_WATER) {
+            if (this.location == Location.IN_LAVA) {
+                f = (this.lavaLevel - this.getY()) / (double)this.getHeight();
+                velocityDecay = 0.9f;
+            } else if (this.location == Location.UNDER_FLOWING_LAVA) {
                 e = -7.0E-4;
-                this.velocityDecay = 0.9f;
-            } else if (this.location == Location.UNDER_WATER) {
+                velocityDecay = 0.9f;
+            } else if (this.location == Location.UNDER_LAVA) {
                 f = 0.01f;
-                this.velocityDecay = 0.45f;
+                velocityDecay = 0.45f;
             } else if (this.location == Location.IN_AIR) {
-                this.velocityDecay = 0.9f;
+                velocityDecay = 0.9f;
             } else if (this.location == Location.ON_LAND) {
-                this.velocityDecay = this.nearbySlipperiness;
+                velocityDecay = this.nearbySlipperiness;
                 if (this.getControllingPassenger() instanceof PlayerEntity) {
                     this.nearbySlipperiness /= 2.0f;
                 }
             }
             Vec3d vec3d = this.getVelocity();
-            this.setVelocity(vec3d.x * (double)this.velocityDecay, vec3d.y + e, vec3d.z * (double)this.velocityDecay);
-            this.yawVelocity *= this.velocityDecay;
+            this.setVelocity(vec3d.x * (double) velocityDecay, vec3d.y + e, vec3d.z * (double) velocityDecay);
+            this.yawVelocity *= velocityDecay;
             if (f > 0.0) {
                 Vec3d vec3d2 = this.getVelocity();
                 this.setVelocity(vec3d2.x, (vec3d2.y + f * 0.06153846016296973) * 0.75, vec3d2.z);
@@ -645,7 +660,7 @@ public class ExtraBoatEntity extends Entity implements VariantHolder<BoatEntity.
     public ActionResult interact(PlayerEntity player, Hand hand) {
         if (player.shouldCancelInteraction())
             return ActionResult.PASS;
-        if (this.ticksUnderwater < 60.0f) {
+        if (this.ticksUnderlava < 60.0f) {
             if (!isClient())
                 return player.startRiding(this) ? ActionResult.CONSUME : ActionResult.PASS;
             return ActionResult.SUCCESS;
@@ -758,9 +773,8 @@ public class ExtraBoatEntity extends Entity implements VariantHolder<BoatEntity.
         this.pressingBack = pressingBack;
     }
 
-    @Override
-    public boolean isSubmergedInWater() {
-        return this.location == Location.UNDER_WATER || this.location == Location.UNDER_FLOWING_WATER;
+    public boolean isSubmergedInLava() {
+        return this.location == Location.UNDER_LAVA || this.location == Location.UNDER_FLOWING_LAVA;
     }
 
     @Override
@@ -769,12 +783,11 @@ public class ExtraBoatEntity extends Entity implements VariantHolder<BoatEntity.
     }
 
     public enum Location {
-        IN_WATER,
-        UNDER_WATER,
-        UNDER_FLOWING_WATER,
+        IN_LAVA,
+        UNDER_LAVA,
+        UNDER_FLOWING_LAVA,
         ON_LAND,
-        IN_AIR;
-
+        IN_AIR
     }
 
     @Override

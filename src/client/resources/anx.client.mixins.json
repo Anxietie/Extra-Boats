@@ -5,7 +5,9 @@
   "client": [
     "BoatEntityRendererMixin",
     "ClientPlayerEntityMixin",
-    "EntityModelLayersMixin"
+    "EntityModelLayersMixin",
+    "EntityModelsMixin",
+    "RenderLayersMixin"
   ],
   "injectors": {
     "defaultRequire": 1
