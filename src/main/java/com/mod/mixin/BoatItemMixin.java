@@ -50,11 +50,14 @@ public abstract class BoatItemMixin extends Item {
         if (type == CRIMSON || type == WARPED) {
             BlockHitResult hitResult = BoatItem.raycast(world, user, RaycastContext.FluidHandling.ANY);
             ItemStack itemStack = user.getStackInHand(hand);
-            ExtraBoatEntity boatEntity = this.createEntity(world, hitResult);
+            ExtraBoatEntity boatEntity = createEntity(world, hitResult);
             boatEntity.setVariant(type);
             boatEntity.setYaw(user.getYaw());
-            if (!world.isSpaceEmpty(boatEntity, boatEntity.getBoundingBox()))
+            if (!world.isSpaceEmpty(boatEntity, boatEntity.getBoundingBox())) {
                 cir.setReturnValue(TypedActionResult.fail(itemStack));
+                // load bearing return lol
+                return;
+            }
             if (!world.isClient) {
                 world.spawnEntity(boatEntity);
                 world.emitGameEvent(user, GameEvent.ENTITY_PLACE, hitResult.getPos());
