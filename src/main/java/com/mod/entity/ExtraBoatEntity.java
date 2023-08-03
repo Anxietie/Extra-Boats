@@ -21,7 +21,6 @@ import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.network.packet.c2s.play.BoatPaddleStateC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerInputC2SPacket;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.predicate.entity.EntityPredicates;
 import net.minecraft.registry.tag.FluidTags;
@@ -29,11 +28,8 @@ import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
-import net.minecraft.util.StringIdentifiable;
 import net.minecraft.util.function.BooleanBiFunction;
-import net.minecraft.util.function.ValueLists;
 import net.minecraft.util.math.*;
-import net.minecraft.util.profiling.jfr.sample.NetworkIoStatistics;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockLocating;
@@ -44,7 +40,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.IntFunction;
 
 import static com.mod.entity.ExtendedBoatEntityType.WARPED;
 
@@ -155,23 +150,20 @@ public class ExtraBoatEntity extends Entity implements VariantHolder<BoatEntity.
 
     @Override
     public boolean damage(DamageSource source, float amount) {
-        boolean bl;
-        if (this.isInvulnerableTo(source)) {
+        boolean attackingPlayerInCreative;
+        if (this.isInvulnerableTo(source))
             return false;
-        }
-        if (this.getWorld().isClient || this.isRemoved()) {
+        if (isClient() || this.isRemoved())
             return true;
-        }
         this.setDamageWobbleSide(-this.getDamageWobbleSide());
         this.setDamageWobbleTicks(10);
         this.setDamageWobbleStrength(this.getDamageWobbleStrength() + amount * 10.0f);
         this.scheduleVelocityUpdate();
         this.emitGameEvent(GameEvent.ENTITY_DAMAGE, source.getAttacker());
-        bl = source.getAttacker() instanceof PlayerEntity && ((PlayerEntity)source.getAttacker()).getAbilities().creativeMode;
-        if (bl || this.getDamageWobbleStrength() > 40.0f) {
-            if (!bl && this.getWorld().getGameRules().getBoolean(GameRules.DO_ENTITY_DROPS)) {
+        attackingPlayerInCreative = source.getAttacker() instanceof PlayerEntity && ((PlayerEntity)source.getAttacker()).getAbilities().creativeMode;
+        if (attackingPlayerInCreative || this.getDamageWobbleStrength() > 40.0f) {
+            if (!attackingPlayerInCreative && this.getWorld().getGameRules().getBoolean(GameRules.DO_ENTITY_DROPS))
                 this.dropItems(source);
-            }
             this.discard();
         }
         return true;
@@ -183,7 +175,7 @@ public class ExtraBoatEntity extends Entity implements VariantHolder<BoatEntity.
 
     @Override
     public void onBubbleColumnSurfaceCollision(boolean drag) {
-        if (!this.getWorld().isClient) {
+        if (!isClient()) {
             this.onBubbleColumnSurface = true;
             this.bubbleColumnIsDrag = drag;
             if (this.getBubbleWobbleTicks() == 0) {
@@ -192,7 +184,7 @@ public class ExtraBoatEntity extends Entity implements VariantHolder<BoatEntity.
         }
         this.getWorld().addParticle(ParticleTypes.SPLASH, this.getX() + (double)this.random.nextFloat(), this.getY() + 0.7, this.getZ() + (double)this.random.nextFloat(), 0.0, 0.0, 0.0);
         if (this.random.nextInt(20) == 0) {
-            this.getWorld().playSound(this.getX(), this.getY(), this.getZ(), this.getSplashSound(), this.getSoundCategory(), 1.0f, 0.8f + 0.4f * this.random.nextFloat(), false);
+            this.getWorld().playSoundFromEntity((PlayerEntity)this.getControllingPassenger(), this, this.getSplashSound(), this.getSoundCategory(), 1.0f, 0.8f + 0.4f * this.random.nextFloat());
             this.emitGameEvent(GameEvent.SPLASH, this.getControllingPassenger());
         }
     }
@@ -200,12 +192,10 @@ public class ExtraBoatEntity extends Entity implements VariantHolder<BoatEntity.
     @Override
     public void pushAwayFrom(Entity entity) {
         if (entity instanceof ExtraBoatEntity) {
-            if (entity.getBoundingBox().minY < this.getBoundingBox().maxY) {
+            if (entity.getBoundingBox().minY < this.getBoundingBox().maxY)
                 super.pushAwayFrom(entity);
-            }
-        } else if (entity.getBoundingBox().minY <= this.getBoundingBox().minY) {
+        } else if (entity.getBoundingBox().minY <= this.getBoundingBox().minY)
             super.pushAwayFrom(entity);
-        }
     }
 
     public Item asItem() {
@@ -245,24 +235,19 @@ public class ExtraBoatEntity extends Entity implements VariantHolder<BoatEntity.
         this.lastLocation = this.location;
         this.location = this.checkLocation();
         this.ticksUnderwater = this.location == Location.UNDER_WATER || this.location == Location.UNDER_FLOWING_WATER ? this.ticksUnderwater + 1.0f : 0.0f;
-        if (!this.getWorld().isClient && this.ticksUnderwater >= 60.0f) {
+        if (!isClient() && this.ticksUnderwater >= 60.0f)
             this.removeAllPassengers();
-        }
-        if (this.getDamageWobbleTicks() > 0) {
+        if (this.getDamageWobbleTicks() > 0)
             this.setDamageWobbleTicks(this.getDamageWobbleTicks() - 1);
-        }
-        if (this.getDamageWobbleStrength() > 0.0f) {
+        if (this.getDamageWobbleStrength() > 0.0f)
             this.setDamageWobbleStrength(this.getDamageWobbleStrength() - 1.0f);
-        }
         super.tick();
         this.updatePositionAndRotation();
         if (this.isLogicalSideForUpdatingMovement()) {
-            if (!(this.getFirstPassenger() instanceof PlayerEntity)) {
+            if (!(this.getFirstPassenger() instanceof PlayerEntity))
                 this.setPaddleMovings(false, false);
-            }
-
             this.updateVelocity();
-            if (this.getWorld().isClient) {
+            if (isClient()) {
                 this.updatePaddles();
                 this.getWorld().sendPacket(new BoatPaddleStateC2SPacket(this.isPaddleMoving(0), this.isPaddleMoving(1)));
             }
@@ -274,13 +259,13 @@ public class ExtraBoatEntity extends Entity implements VariantHolder<BoatEntity.
         for (int i = 0; i <= 1; ++i) {
             if (this.isPaddleMoving(i)) {
                 SoundEvent soundEvent;
-                if (!this.isSilent() && (double)(this.paddlePhases[i] % ((float)Math.PI * 2)) <= 0.7853981852531433 && (double)((this.paddlePhases[i] + 0.3926991f) % ((float)Math.PI * 2)) >= 0.7853981852531433 && (soundEvent = this.getPaddleSoundEvent()) != null) {
+                if (!this.isSilent() && (double)(this.paddlePhases[i] % ((float)Math.PI * 2)) <= EMIT_SOUND_EVENT_PADDLE_ROTATION && (double)((this.paddlePhases[i] + NEXT_PADDLE_PHASE) % ((float)Math.PI * 2)) >= EMIT_SOUND_EVENT_PADDLE_ROTATION && (soundEvent = this.getPaddleSoundEvent()) != null) {
                     Vec3d vec3d = this.getRotationVec(1.0f);
                     double d = i == 1 ? -vec3d.z : vec3d.z;
                     double e = i == 1 ? vec3d.x : -vec3d.x;
-                    this.getWorld().playSound(null, this.getX() + d, this.getY(), this.getZ() + e, soundEvent, this.getSoundCategory(), 1.0f, 0.8f + 0.4f * this.random.nextFloat());
+                    this.getWorld().playSound((PlayerEntity)this.getControllingPassenger(), this.getX() + d, this.getY(), this.getZ() + e, soundEvent, this.getSoundCategory(), 1.0f, 0.8f + 0.4f * this.random.nextFloat());
                 }
-                this.paddlePhases[i] = this.paddlePhases[i] + 0.3926991f;
+                this.paddlePhases[i] = this.paddlePhases[i] + NEXT_PADDLE_PHASE;
                 continue;
             }
             this.paddlePhases[i] = 0.0f;
@@ -288,10 +273,10 @@ public class ExtraBoatEntity extends Entity implements VariantHolder<BoatEntity.
         this.checkBlockCollision();
         List<Entity> list = this.getWorld().getOtherEntities(this, this.getBoundingBox().expand(0.2f, -0.01f, 0.2f), EntityPredicates.canBePushedBy(this));
         if (!list.isEmpty()) {
-            boolean bl = !this.getWorld().isClient && !(this.getControllingPassenger() instanceof PlayerEntity);
+            boolean hasController = !isClient() && !(this.getControllingPassenger() instanceof PlayerEntity);
             for (Entity entity : list) {
                 if (entity.hasPassenger(this)) continue;
-                if (bl && this.getPassengerList().size() < this.getMaxPassengers() && !entity.hasVehicle() && this.isSmallerThanBoat(entity) && entity instanceof LivingEntity && !(entity instanceof WaterCreatureEntity) && !(entity instanceof PlayerEntity)) {
+                if (hasController && this.getPassengerList().size() < this.getMaxPassengers() && !entity.hasVehicle() && this.isSmallerThanBoat(entity) && entity instanceof LivingEntity && !(entity instanceof WaterCreatureEntity) && !(entity instanceof PlayerEntity)) {
                     entity.startRiding(this);
                     continue;
                 }
@@ -300,8 +285,12 @@ public class ExtraBoatEntity extends Entity implements VariantHolder<BoatEntity.
         }
     }
 
+    private boolean isClient() {
+        return this.getWorld().isClient;
+    }
+
     private void handleBubbleColumn() {
-        if (this.getWorld().isClient) {
+        if (isClient()) {
             int i = this.getBubbleWobbleTicks();
             this.bubbleWobbleStrength += i > 0 ? 0.05f : -0.1f;
             this.bubbleWobbleStrength = MathHelper.clamp(this.bubbleWobbleStrength, 0.0f, 1.0f);
@@ -309,9 +298,8 @@ public class ExtraBoatEntity extends Entity implements VariantHolder<BoatEntity.
             this.bubbleWobble = 10.0f * (float)Math.sin(0.5f * (float)this.getWorld().getTime()) * this.bubbleWobbleStrength;
         } else {
             int i;
-            if (!this.onBubbleColumnSurface) {
+            if (!this.onBubbleColumnSurface)
                 this.setBubbleWobbleTicks(0);
-            }
             if ((i = this.getBubbleWobbleTicks()) > 0) {
                 this.setBubbleWobbleTicks(--i);
                 int j = 60 - i - 1;
@@ -321,9 +309,9 @@ public class ExtraBoatEntity extends Entity implements VariantHolder<BoatEntity.
                     if (this.bubbleColumnIsDrag) {
                         this.setVelocity(vec3d.add(0.0, -0.7, 0.0));
                         this.removeAllPassengers();
-                    } else {
-                        this.setVelocity(vec3d.x, this.hasPassenger((Entity entity) -> entity instanceof PlayerEntity) ? 2.7 : 0.6, vec3d.z);
                     }
+                    else
+                        this.setVelocity(vec3d.x, this.hasPassenger((Entity entity) -> entity instanceof PlayerEntity) ? 2.7 : 0.6, vec3d.z);
                 }
                 this.onBubbleColumnSurface = false;
             }
@@ -348,9 +336,8 @@ public class ExtraBoatEntity extends Entity implements VariantHolder<BoatEntity.
             this.field_7708 = 0;
             this.updateTrackedPosition(this.getX(), this.getY(), this.getZ());
         }
-        if (this.field_7708 <= 0) {
+        if (this.field_7708 <= 0)
             return;
-        }
         double d = this.getX() + (this.x - this.getX()) / (double)this.field_7708;
         double e = this.getY() + (this.y - this.getY()) / (double)this.field_7708;
         double f = this.getZ() + (this.z - this.getZ()) / (double)this.field_7708;
@@ -369,7 +356,7 @@ public class ExtraBoatEntity extends Entity implements VariantHolder<BoatEntity.
 
     public float interpolatePaddlePhase(int paddle, float tickDelta) {
         if (this.isPaddleMoving(paddle)) {
-            return MathHelper.clampedLerp(this.paddlePhases[paddle] - 0.3926991f, this.paddlePhases[paddle], tickDelta);
+            return MathHelper.clampedLerp(this.paddlePhases[paddle] - NEXT_PADDLE_PHASE, this.paddlePhases[paddle], tickDelta);
         }
         return 0.0f;
     }
@@ -456,7 +443,7 @@ public class ExtraBoatEntity extends Entity implements VariantHolder<BoatEntity.
         int l = MathHelper.ceil(box.minY + 0.001);
         int m = MathHelper.floor(box.minZ);
         int n = MathHelper.ceil(box.maxZ);
-        boolean bl = false;
+        boolean inWater = false;
         this.waterLevel = -1.7976931348623157E308;
         BlockPos.Mutable mutable = new BlockPos.Mutable();
         for (int o = i; o < j; ++o) {
@@ -467,11 +454,11 @@ public class ExtraBoatEntity extends Entity implements VariantHolder<BoatEntity.
                     if (!fluidState.isIn(FluidTags.WATER)) continue;
                     float f = (float)p + fluidState.getHeight(this.getWorld(), mutable);
                     this.waterLevel = Math.max((double)f, this.waterLevel);
-                    bl |= box.minY < (double)f;
+                    inWater |= box.minY < (double)f;
                 }
             }
         }
-        return bl;
+        return inWater;
     }
 
     @Nullable
@@ -504,7 +491,6 @@ public class ExtraBoatEntity extends Entity implements VariantHolder<BoatEntity.
     }
 
     private void updateVelocity() {
-        double d = -0.4;
         double e = this.hasNoGravity() ? 0.0 : (double)-0.04f;
         double f = 0.0;
         this.velocityDecay = 0.05f;
@@ -657,13 +643,11 @@ public class ExtraBoatEntity extends Entity implements VariantHolder<BoatEntity.
 
     @Override
     public ActionResult interact(PlayerEntity player, Hand hand) {
-        if (player.shouldCancelInteraction()) {
+        if (player.shouldCancelInteraction())
             return ActionResult.PASS;
-        }
         if (this.ticksUnderwater < 60.0f) {
-            if (!this.getWorld().isClient) {
+            if (!isClient())
                 return player.startRiding(this) ? ActionResult.CONSUME : ActionResult.PASS;
-            }
             return ActionResult.SUCCESS;
         }
         return ActionResult.PASS;
@@ -672,9 +656,8 @@ public class ExtraBoatEntity extends Entity implements VariantHolder<BoatEntity.
     @Override
     protected void fall(double heightDifference, boolean onGround, BlockState state, BlockPos landedPosition) {
         this.fallVelocity = this.getVelocity().y;
-        if (this.hasVehicle()) {
+        if (this.hasVehicle())
             return;
-        }
         if (onGround) {
             if (this.fallDistance > 3.0f) {
                 if (this.location != Location.ON_LAND) {
@@ -682,7 +665,7 @@ public class ExtraBoatEntity extends Entity implements VariantHolder<BoatEntity.
                     return;
                 }
                 this.handleFallDamage(this.fallDistance, 1.0f, this.getDamageSources().fall());
-                if (!this.getWorld().isClient && !this.isRemoved()) {
+                if (!isClient() && !this.isRemoved()) {
                     this.kill();
                     if (this.getWorld().getGameRules().getBoolean(GameRules.DO_ENTITY_DROPS)) {
                         int i;
@@ -696,7 +679,8 @@ public class ExtraBoatEntity extends Entity implements VariantHolder<BoatEntity.
                 }
             }
             this.onLanding();
-        } else if (!this.getWorld().getFluidState(this.getBlockPos().down()).isIn(FluidTags.WATER) && heightDifference < 0.0) {
+        }
+        else if (!this.getWorld().getFluidState(this.getBlockPos().down()).isIn(FluidTags.WATER) && heightDifference < 0.0) {
             this.fallDistance -= (float)heightDifference;
         }
     }
