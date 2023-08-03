@@ -81,6 +81,7 @@ public class ExtraBoatEntity extends Entity implements VariantHolder<BoatEntity.
     private float bubbleWobbleStrength;
     private float bubbleWobble;
     private float lastBubbleWobble;
+    private final StatusEffectInstance fireResistance = new StatusEffectInstance(StatusEffects.FIRE_RESISTANCE, 1, 1, false, false, false);
 
     public ExtraBoatEntity(EntityType<? extends ExtraBoatEntity> entityType, World world) {
         super(entityType, world);
@@ -233,15 +234,17 @@ public class ExtraBoatEntity extends Entity implements VariantHolder<BoatEntity.
         this.location = this.checkLocation();
         this.ticksUnderlava = this.location == Location.UNDER_LAVA || this.location == Location.UNDER_FLOWING_LAVA ? this.ticksUnderlava + 1.0f : 0.0f;
         if (!isClient() && this.ticksUnderlava >= 60.0f) {
-            List<Entity> passengers = this.getPassengerList();
+            // List<Entity> passengers = this.getPassengerList();
+            this.removeAllPassengers();
+            /*
             for (Entity e : passengers) {
                 if (e instanceof LivingEntity) {
-                    if (((LivingEntity)e).hasStatusEffect(StatusEffects.FIRE_RESISTANCE) && ((LivingEntity)e).getStatusEffect(StatusEffects.FIRE_RESISTANCE).isDurationBelow(4))
+                    if (((LivingEntity)e).hasStatusEffect(StatusEffects.FIRE_RESISTANCE) && ((LivingEntity)e).getStatusEffect(StatusEffects.FIRE_RESISTANCE).isDurationBelow(2))
                         ((LivingEntity)e).removeStatusEffect(StatusEffects.FIRE_RESISTANCE);
                     e.extinguish();
                 }
             }
-            this.removeAllPassengers();
+             */
         }
         if (this.getDamageWobbleTicks() > 0)
             this.setDamageWobbleTicks(this.getDamageWobbleTicks() - 1);
@@ -249,14 +252,15 @@ public class ExtraBoatEntity extends Entity implements VariantHolder<BoatEntity.
             this.setDamageWobbleStrength(this.getDamageWobbleStrength() - 1.0f);
         super.tick();
         this.updatePositionAndRotation();
+        /*
         if (this.hasPassengers() && (this.location == Location.IN_LAVA || this.location == Location.UNDER_LAVA || this.location == Location.UNDER_FLOWING_LAVA)) {
             List<Entity> passengers = this.getPassengerList();
-            StatusEffectInstance fireResistance = new StatusEffectInstance(StatusEffects.FIRE_RESISTANCE, 3, 1, false, false, false);
             for (Entity e : passengers) {
                 if (e instanceof LivingEntity)
-                    ((LivingEntity)e).addStatusEffect(fireResistance);
+                    ((LivingEntity) e).addStatusEffect(fireResistance);
             }
         }
+        */
         if (this.isLogicalSideForUpdatingMovement()) {
             if (!(this.getFirstPassenger() instanceof PlayerEntity))
                 this.setPaddleMovings(false, false);
@@ -602,6 +606,10 @@ public class ExtraBoatEntity extends Entity implements VariantHolder<BoatEntity.
         }
     }
 
+    private boolean isBlockLava(BlockPos blockPos) {
+        return this.getWorld().getFluidState(blockPos).isIn(FluidTags.LAVA);
+    }
+
     @Override
     public Vec3d updatePassengerForDismount(LivingEntity passenger) {
         Vec3d vec3d = getPassengerDismountOffset(this.getWidth() * MathHelper.SQUARE_ROOT_OF_TWO, passenger.getWidth(), passenger.getYaw());
@@ -609,7 +617,7 @@ public class ExtraBoatEntity extends Entity implements VariantHolder<BoatEntity.
         double e = this.getZ() + vec3d.z;
         BlockPos blockPos = BlockPos.ofFloored(d, this.getBoundingBox().maxY, e);
         BlockPos blockPos2 = blockPos.down();
-        if (!this.getWorld().isWater(blockPos2)) {
+        if (!isBlockLava(blockPos2)) {
             double g;
             ArrayList<Vec3d> list = Lists.newArrayList();
             double f = this.getWorld().getDismountHeight(blockPos);
