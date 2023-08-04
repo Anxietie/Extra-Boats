@@ -15,10 +15,10 @@ import static com.mod.ExtraBoats.MODID;
 public class ItemRegister {
     private static final Collection<ItemStack> ITEMS = new ArrayList<>();
 
-    public static final Item CRIMSON_BOAT = new BoatItem(false, ExtendedBoatEntityType.CRIMSON, new Item.Settings().maxCount(1));
-    public static final Item CRIMSON_CHEST_BOAT = new BoatItem(true, ExtendedBoatEntityType.CRIMSON, new Item.Settings().maxCount(1));
-    public static final Item WARPED_BOAT = new BoatItem(false, ExtendedBoatEntityType.WARPED, new Item.Settings().maxCount(1));
-    public static final Item WARPED_CHEST_BOAT = new BoatItem(true, ExtendedBoatEntityType.WARPED, new Item.Settings().maxCount(1));
+    public static final Item CRIMSON_BOAT = new BoatItem(false, ExtendedBoatEntityType.CRIMSON, new Item.Settings().maxCount(1).fireproof());
+    public static final Item CRIMSON_CHEST_BOAT = new BoatItem(true, ExtendedBoatEntityType.CRIMSON, new Item.Settings().maxCount(1).fireproof());
+    public static final Item WARPED_BOAT = new BoatItem(false, ExtendedBoatEntityType.WARPED, new Item.Settings().maxCount(1).fireproof());
+    public static final Item WARPED_CHEST_BOAT = new BoatItem(true, ExtendedBoatEntityType.WARPED, new Item.Settings().maxCount(1).fireproof());
 
     /*
     public static final ItemGroup ITEM_GROUP = FabricItemGroup.builder()

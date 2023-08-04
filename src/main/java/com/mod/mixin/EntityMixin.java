@@ -13,10 +13,15 @@ public abstract class EntityMixin {
     @Shadow
     public abstract Entity getVehicle();
 
+    @Shadow
+    private int fireTicks;
+
     @Inject(method = "setOnFireFromLava", at = @At("HEAD"), cancellable = true)
     private void setOnFireFromLava(CallbackInfo ci) {
         Entity vehicle = getVehicle();
         if (vehicle instanceof ExtraBoatEntity) {
+            if (fireTicks > 0 && fireTicks % 20 == 0)
+                ((Entity)(Object)this).damage(((Entity)(Object)this).getDamageSources().onFire(), 1.0f);
             ci.cancel();
         }
     }

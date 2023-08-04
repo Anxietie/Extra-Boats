@@ -5,5 +5,6 @@
   "item.anx.warped_boat": "Warped Boat",
   "item.anx.warped_chest_boat": "Warped Boat with Chest",
   "entity.anx.extra_boat": "Boat",
-  "entity.anx.extra_chest_boat": "Boat with Chest"
+  "entity.anx.extra_chest_boat": "Boat with Chest",
+  "subtitles.anx.entity_boat_paddle_lava": "Rowing"
 }

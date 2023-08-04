@@ -3,6 +3,7 @@ package com.mod.entity;
 import com.google.common.collect.Lists;
 import com.mod.registry.EntityRegister;
 import com.mod.registry.ItemRegister;
+import com.mod.registry.SoundRegister;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.LilyPadBlock;
 import net.minecraft.entity.*;
@@ -10,8 +11,6 @@ import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
-import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.mob.WaterCreatureEntity;
 import net.minecraft.entity.passive.AnimalEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -81,7 +80,6 @@ public class ExtraBoatEntity extends Entity implements VariantHolder<BoatEntity.
     private float bubbleWobbleStrength;
     private float bubbleWobble;
     private float lastBubbleWobble;
-    private final StatusEffectInstance fireResistance = new StatusEffectInstance(StatusEffects.FIRE_RESISTANCE, 1, 1, false, false, false);
 
     public ExtraBoatEntity(EntityType<? extends ExtraBoatEntity> entityType, World world) {
         super(entityType, world);
@@ -182,7 +180,7 @@ public class ExtraBoatEntity extends Entity implements VariantHolder<BoatEntity.
         }
         this.getWorld().addParticle(ParticleTypes.SPLASH, this.getX() + (double)this.random.nextFloat(), this.getY() + 0.7, this.getZ() + (double)this.random.nextFloat(), 0.0, 0.0, 0.0);
         if (this.random.nextInt(20) == 0) {
-            this.getWorld().playSoundFromEntity((PlayerEntity)this.getControllingPassenger(), this, this.getSplashSound(), this.getSoundCategory(), 1.0f, 0.8f + 0.4f * this.random.nextFloat());
+            this.getWorld().playSoundFromEntity(null, this, this.getSplashSound(), this.getSoundCategory(), 1.0f, 0.8f + 0.4f * this.random.nextFloat());
             this.emitGameEvent(GameEvent.SPLASH, this.getControllingPassenger());
         }
     }
@@ -233,34 +231,14 @@ public class ExtraBoatEntity extends Entity implements VariantHolder<BoatEntity.
         this.lastLocation = this.location;
         this.location = this.checkLocation();
         this.ticksUnderlava = this.location == Location.UNDER_LAVA || this.location == Location.UNDER_FLOWING_LAVA ? this.ticksUnderlava + 1.0f : 0.0f;
-        if (!isClient() && this.ticksUnderlava >= 60.0f) {
-            // List<Entity> passengers = this.getPassengerList();
+        if (!isClient() && this.ticksUnderlava >= 60.0f)
             this.removeAllPassengers();
-            /*
-            for (Entity e : passengers) {
-                if (e instanceof LivingEntity) {
-                    if (((LivingEntity)e).hasStatusEffect(StatusEffects.FIRE_RESISTANCE) && ((LivingEntity)e).getStatusEffect(StatusEffects.FIRE_RESISTANCE).isDurationBelow(2))
-                        ((LivingEntity)e).removeStatusEffect(StatusEffects.FIRE_RESISTANCE);
-                    e.extinguish();
-                }
-            }
-             */
-        }
         if (this.getDamageWobbleTicks() > 0)
             this.setDamageWobbleTicks(this.getDamageWobbleTicks() - 1);
         if (this.getDamageWobbleStrength() > 0.0f)
             this.setDamageWobbleStrength(this.getDamageWobbleStrength() - 1.0f);
         super.tick();
         this.updatePositionAndRotation();
-        /*
-        if (this.hasPassengers() && (this.location == Location.IN_LAVA || this.location == Location.UNDER_LAVA || this.location == Location.UNDER_FLOWING_LAVA)) {
-            List<Entity> passengers = this.getPassengerList();
-            for (Entity e : passengers) {
-                if (e instanceof LivingEntity)
-                    ((LivingEntity) e).addStatusEffect(fireResistance);
-            }
-        }
-        */
         if (this.isLogicalSideForUpdatingMovement()) {
             if (!(this.getFirstPassenger() instanceof PlayerEntity))
                 this.setPaddleMovings(false, false);
@@ -277,12 +255,8 @@ public class ExtraBoatEntity extends Entity implements VariantHolder<BoatEntity.
         for (int i = 0; i <= 1; ++i) {
             if (this.isPaddleMoving(i)) {
                 SoundEvent soundEvent;
-                if (!this.isSilent() && (double)(this.paddlePhases[i] % ((float)Math.PI * 2)) <= EMIT_SOUND_EVENT_PADDLE_ROTATION && (double)((this.paddlePhases[i] + NEXT_PADDLE_PHASE) % ((float)Math.PI * 2)) >= EMIT_SOUND_EVENT_PADDLE_ROTATION && (soundEvent = this.getPaddleSoundEvent()) != null) {
-                    Vec3d vec3d = this.getRotationVec(1.0f);
-                    double d = i == 1 ? -vec3d.z : vec3d.z;
-                    double e = i == 1 ? vec3d.x : -vec3d.x;
-                    this.getWorld().playSound((PlayerEntity)this.getControllingPassenger(), this.getX() + d, this.getY(), this.getZ() + e, soundEvent, this.getSoundCategory(), 1.0f, 0.8f + 0.4f * this.random.nextFloat());
-                }
+                if (!this.isSilent() && (double)(this.paddlePhases[i] % ((float)Math.PI * 2)) <= EMIT_SOUND_EVENT_PADDLE_ROTATION && (double)((this.paddlePhases[i] + NEXT_PADDLE_PHASE) % ((float)Math.PI * 2)) >= EMIT_SOUND_EVENT_PADDLE_ROTATION && (soundEvent = this.getPaddleSoundEvent()) != null)
+                    this.getWorld().playSoundFromEntity((PlayerEntity)this.getFirstPassenger(), this, soundEvent, this.getSoundCategory(), 1.0f, 0.8f + 0.4f * this.random.nextFloat());
                 this.paddlePhases[i] = this.paddlePhases[i] + NEXT_PADDLE_PHASE;
                 continue;
             }
@@ -341,7 +315,8 @@ public class ExtraBoatEntity extends Entity implements VariantHolder<BoatEntity.
     protected SoundEvent getPaddleSoundEvent() {
         switch (this.checkLocation()) {
             case IN_LAVA, UNDER_LAVA, UNDER_FLOWING_LAVA -> {
-                return SoundEvents.ENTITY_BOAT_PADDLE_WATER;
+                return SoundRegister.ENTITY_BOAT_PADDLE_LAVA;
+                // return SoundEvents.ENTITY_BOAT_PADDLE_WATER;
             }
             case ON_LAND -> {
                 return SoundEvents.ENTITY_BOAT_PADDLE_LAND;

@@ -2,6 +2,7 @@ package com.mod;
 
 import com.mod.registry.EntityRegister;
 import com.mod.registry.ItemRegister;
+import com.mod.registry.SoundRegister;
 import net.fabricmc.api.ModInitializer;
 
 import org.slf4j.Logger;
@@ -28,5 +29,8 @@ public class ExtraBoats implements ModInitializer {
 
 		EntityRegister.registerEntities();
 		LOGGER.info("Extra Boats entities registered");
+
+		SoundRegister.registerSounds();
+		LOGGER.info("Extra Boats sounds registered");
 	}
 }

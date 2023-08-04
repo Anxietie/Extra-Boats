@@ -1,0 +1,31 @@
+{
+  "entity_boat_paddle_lava": {
+    "subtitle": "subtitles.anx.entity_boat_paddle_lava",
+    "sounds": [
+      {
+        "name": "anx:entity_boat_paddle_lava1",
+        "volume": 0.8
+      },
+      {
+        "name": "anx:entity_boat_paddle_lava2",
+        "volume": 0.8
+      },
+      {
+        "name": "anx:entity_boat_paddle_lava3",
+        "volume": 0.8
+      },
+      {
+        "name": "anx:entity_boat_paddle_lava4",
+        "volume": 0.8
+      },
+      {
+        "name": "anx:entity_boat_paddle_lava5",
+        "volume": 0.8
+      },
+      {
+        "name": "anx:entity_boat_paddle_lava6",
+        "volume": 0.8
+      }
+    ]
+  }
+}
