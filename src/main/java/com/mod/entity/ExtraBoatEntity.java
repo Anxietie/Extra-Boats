@@ -547,8 +547,7 @@ public class ExtraBoatEntity extends Entity implements VariantHolder<BoatEntity.
             f -= 0.005f;
         }
         this.setVelocity(this.getVelocity().add(MathHelper.sin(-this.getYaw() * ((float)Math.PI / 180)) * f, 0.0, MathHelper.cos(this.getYaw() * ((float)Math.PI / 180)) * f));
-        if (this.getControllingPassenger() instanceof PlayerEntity)
-            this.setPaddleMovings(this.pressingRight && !this.pressingLeft || this.pressingForward, this.pressingLeft && !this.pressingRight || this.pressingForward);
+        this.setPaddleMovings(this.pressingRight && !this.pressingLeft || this.pressingForward, this.pressingLeft && !this.pressingRight || this.pressingForward);
     }
 
     protected float getPassengerHorizontalOffset() {
