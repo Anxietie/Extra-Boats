@@ -32,7 +32,7 @@ public class ExtraBoatEntityModel extends CompositeEntityModel<ExtraBoatEntity> 
 
     protected ImmutableList.Builder<ModelPart> getParts(ModelPart root) {
         ImmutableList.Builder<ModelPart> builder = new ImmutableList.Builder<>();
-        builder.add(root.getChild("bottom"), root.getChild("back"), root.getChild("front"), root.getChild("right"), root.getChild("left"), this.leftPaddle, this.rightPaddle);
+        builder.add(root.getChild(BOTTOM), root.getChild(BACK), root.getChild(FRONT), root.getChild(RIGHT), root.getChild(LEFT), this.leftPaddle, this.rightPaddle);
         return builder;
     }
 

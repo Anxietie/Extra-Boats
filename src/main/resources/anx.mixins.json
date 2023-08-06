@@ -7,8 +7,8 @@
     "BoatItemMixin",
     "DispenserBehaviorMixin",
     "EntityMixin",
-    "ItemGroupsMixin",
     "PlayerEntityMixin",
+    "SummonCommandMixin",
     "TypeSpecificPredicateDeserializersMixin"
   ],
   "injectors": {

@@ -249,14 +249,17 @@ public class ExtraBoatEntity extends Entity implements VariantHolder<BoatEntity.
             }
             this.move(MovementType.SELF, this.getVelocity());
         }
-        else
+        else {
             this.setVelocity(Vec3d.ZERO);
+            this.setPaddleMovings(false, false);
+        }
         this.handleBubbleColumn();
         for (int i = 0; i <= 1; ++i) {
             if (this.isPaddleMoving(i)) {
                 SoundEvent soundEvent;
+                Entity controllingPassenger = this.getControllingPassenger();
                 if (!this.isSilent() && (double)(this.paddlePhases[i] % ((float)Math.PI * 2)) <= EMIT_SOUND_EVENT_PADDLE_ROTATION && (double)((this.paddlePhases[i] + NEXT_PADDLE_PHASE) % ((float)Math.PI * 2)) >= EMIT_SOUND_EVENT_PADDLE_ROTATION && (soundEvent = this.getPaddleSoundEvent()) != null)
-                    this.getWorld().playSoundFromEntity((PlayerEntity)this.getFirstPassenger(), this, soundEvent, this.getSoundCategory(), 1.0f, 0.8f + 0.4f * this.random.nextFloat());
+                    this.getWorld().playSoundFromEntity(controllingPassenger instanceof PlayerEntity ? (PlayerEntity)controllingPassenger : null, this, soundEvent, this.getSoundCategory(), 1.0f, 0.8f + 0.4f * this.random.nextFloat());
                 this.paddlePhases[i] = this.paddlePhases[i] + NEXT_PADDLE_PHASE;
                 continue;
             }
@@ -265,10 +268,10 @@ public class ExtraBoatEntity extends Entity implements VariantHolder<BoatEntity.
         this.checkBlockCollision();
         List<Entity> list = this.getWorld().getOtherEntities(this, this.getBoundingBox().expand(0.2f, -0.01f, 0.2f), EntityPredicates.canBePushedBy(this));
         if (!list.isEmpty()) {
-            boolean hasController = !isClient() && !(this.getControllingPassenger() instanceof PlayerEntity);
+            boolean nonPlayerController = !isClient() && !(this.getControllingPassenger() instanceof PlayerEntity);
             for (Entity entity : list) {
                 if (entity.hasPassenger(this)) continue;
-                if (hasController && this.getPassengerList().size() < this.getMaxPassengers() && !entity.hasVehicle() && this.isSmallerThanBoat(entity) && entity instanceof LivingEntity && !(entity instanceof WaterCreatureEntity) && !(entity instanceof PlayerEntity)) {
+                if (nonPlayerController && this.getPassengerList().size() < this.getMaxPassengers() && !entity.hasVehicle() && this.isSmallerThanBoat(entity) && entity instanceof LivingEntity && !(entity instanceof WaterCreatureEntity) && !(entity instanceof PlayerEntity)) {
                     entity.startRiding(this);
                     continue;
                 }
@@ -544,7 +547,8 @@ public class ExtraBoatEntity extends Entity implements VariantHolder<BoatEntity.
             f -= 0.005f;
         }
         this.setVelocity(this.getVelocity().add(MathHelper.sin(-this.getYaw() * ((float)Math.PI / 180)) * f, 0.0, MathHelper.cos(this.getYaw() * ((float)Math.PI / 180)) * f));
-        this.setPaddleMovings(this.pressingRight && !this.pressingLeft || this.pressingForward, this.pressingLeft && !this.pressingRight || this.pressingForward);
+        if (this.getControllingPassenger() instanceof PlayerEntity)
+            this.setPaddleMovings(this.pressingRight && !this.pressingLeft || this.pressingForward, this.pressingLeft && !this.pressingRight || this.pressingForward);
     }
 
     protected float getPassengerHorizontalOffset() {
